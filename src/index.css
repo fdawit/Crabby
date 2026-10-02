@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+
+:root {
+  --bg: #f4f1ea;
+  --surface: #ffffff;
+  --ink: #12202b;
+  --muted: #4f5b66;
+  --line: #d6d1c6;
+  --accent: #c2410c;
+  --accent-strong: #9a3412;
+  --accent-ink: #ffffff;
+  --danger: #b91c1c;
+
+  /* Quality 1 (poor) → 5 (great). Diverging red–blue, readable with red-green colorblindness. */
+  --q1: #b2182b;
+  --q2: #ef8a62;
+  --q3: #9e9e9e;
+  --q4: #67a9cf;
+  --q5: #2166ac;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e171e;
+    --surface: #17232c;
+    --ink: #eef2f5;
+    --muted: #a3b0bb;
+    --line: #2c3a45;
+    --accent: #f97316;
+    --accent-strong: #fb923c;
+    --accent-ink: #1a0d04;
+    --danger: #f87171;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+select,
+textarea {
+  font-size: 1rem; /* ≥16px stops iOS zooming into fields */
+}

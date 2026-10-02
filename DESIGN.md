@@ -2,7 +2,7 @@
 
 Crabby replaces a spiral crabbing notebook. It logs every visit to a spot (when, where, how many crabs, how good it was, and notes), shows those spots on a color-coded map, and makes the history easy to search and compare.
 
-Status: **draft for review.** No code has been written yet.
+Status: **approved, Phase 1 in progress.** Decisions are recorded in section 6.
 
 ---
 
@@ -22,6 +22,9 @@ Status: **draft for review.** No code has been written yet.
 | R10 | Look back at any day's results | Day view: every visit on a date |
 | R11 | Phone on a boat **and** desktop at home | Responsive web app (PWA), offline-first, synced |
 | R12 | Mobile-first design | Layouts are designed at 375px first, then widened |
+| R13 | Keepers and throwbacks counted separately | Visit `keepers` and `throwbacks` |
+| R14 | Bring in six years of notebook entries | CSV import with spot de-duplication (section 5) |
+| R15 | Spatial autocorrelation to find the best spots | Analysis screen (section 4) |
 
 ---
 
@@ -35,9 +38,11 @@ Spot                                  Visit
 id            uuid                    id            uuid
 name          text   "Pier 4 ladder"  spotId        → Spot.id
 lat, lng      number (WGS84)          startedAt     datetime (local + tz)
-notes         text   standing notes   catchCount    integer ≥ 0
-createdAt     datetime                rating        1–5 (quality that visit)
-archived      bool                    notes         text
+notes         text   standing notes   keepers       integer ≥ 0
+createdAt     datetime                throwbacks    integer ≥ 0
+archived      bool                    pots          integer ≥ 1, optional
+                                      rating        1–5 (quality that visit)
+                                      notes         text
                                       createdAt / updatedAt
 ```
 
@@ -45,8 +50,7 @@ archived      bool                    notes         text
 
 ### Planned extensions (fields we can add later without breaking anything)
 - Tide stage, weather and water temperature (could be filled in automatically from public APIs using time and location)
-- Gear: number of pots or traps, bait type
-- Keepers versus throwbacks, and male/female counts
+- Bait type, male/female counts
 - Photos
 
 ---
@@ -76,12 +80,13 @@ Mobile-first. On a phone the screens are tabs along the bottom. On desktop the s
 
 | Screen | Purpose | Key interactions |
 |---|---|---|
-| **Log catch** (R1–R5) | Record a visit in under 15 seconds | "Use my location" picks the nearest existing spot, or creates a new one. Large +/– stepper for count. 1–5 rating as big tap targets. Optional notes. Time defaults to now and can be edited. |
+| **Log catch** (R1–R5, R13) | Record a visit in under 15 seconds | "Use my location" picks the nearest existing spot, or creates a new one. Large +/– steppers for keepers and throwbacks; optional pots count. 1–5 rating as big tap targets. Optional notes. Time defaults to now and can be edited. |
 | **Home** (R8) | What's been happening lately | Feed grouped by day, plus season totals |
 | **Map** (R6) | Spot patterns by location | Pins colored by quality, with the score printed in each pin. Filter by date range or season, so she can see "which spots were good *in September*". Tap a pin for a summary card. |
 | **Spots** | Every location | Sort by score, total catch, last visited, or distance from her |
 | **Spot detail** (R9) | One spot over time | Catch and rating chart over time, full visit list, standing notes, edit or move the pin |
 | **Day view** (R10) | One date's results | Every visit that day, totals, and a mini map |
+| **Analysis** (R15) | Where the best water is | Hot/cold spot map, cluster labels, and a ranked "best areas" list (section 4) |
 | **Search** (R7) | Find anything | Full-text search over notes and spot names. Filters for date range, rating, catch range and spot. Results can be shown as a list or on the map. |
 
 ### Boat-friendly UX rules
@@ -95,7 +100,37 @@ A 5-step scale from poor to great. The palette is chosen to work for colorblind 
 
 ---
 
-## 4. Recommended technical approach
+## 4. Spatial autocorrelation analysis
+
+A spot's own history only says how *that* spot did. Spatial autocorrelation asks whether good spots **cluster**: is there a stretch of shoreline where everything nearby produces? Clusters are more trustworthy than one lucky spot, and they point to untried water next to proven water.
+
+### Value being analysed
+Per spot, over the selected date range or season, she picks one of:
+- **Keepers per pot** (default when pots are recorded; otherwise keepers per visit). This is the best measure of how productive the water is.
+- **Average rating**
+- **Total catch per visit** (keepers + throwbacks)
+
+Spots with few visits are noisy. Values are **shrunk toward the overall average** (empirical Bayes) in proportion to how few visits back them, and spots below a minimum visit count (default 2) can be excluded.
+
+### Statistics
+| Statistic | Answers | Shown as |
+|---|---|---|
+| **Global Moran's I** | "Overall, do good spots sit near good spots?" | One plain-language headline: *clustered*, *random* or *dispersed*, with its p-value |
+| **Getis-Ord Gi\*** | "Where are the hot spots and cold spots?" | Map pins and shaded zones at 90/95/99% confidence |
+| **Local Moran's I (LISA)** | "Which spots are part of a cluster, and which are outliers?" | Labels: high-high (hot cluster), low-low (cold cluster), high-low (a good spot in poor water), low-high (a dud in good water) |
+
+- **Neighbors:** k-nearest neighbors (default k = 5) using real (haversine) distances. This copes with spots that are bunched in some places and sparse in others. A fixed distance band (e.g. 500 m) is offered as an alternative.
+- **Significance:** a conditional permutation test (999 permutations), with a false-discovery-rate correction for the local statistics so a large map doesn't produce false hot spots by chance.
+- **Seasons:** every statistic runs on the current date filter, so she can compare, say, "hot spots in June–July" with "hot spots in Sept–Oct".
+- **Guard rails:** below about 20 spots the screen says that results are indicative only, and it hides significance labels below 10.
+
+### "Where to try next"
+The output is a ranked list of significant hot-spot clusters, each with its center, its strength and its best spot. It also flags low-high outliers (a dud spot sitting in good water, where moving the pots a little may help).
+
+### Implementation
+It runs entirely in the browser in a small TypeScript module (`src/analysis/`). Even six years of data is at most a few hundred spots, so even the brute-force O(n²) neighbor search with 999 permutations takes well under a second, and it works offline. The module is unit-tested against published PySAL reference values.
+
+## 5. Recommended technical approach
 
 **A Progressive Web App (PWA)**: a single website that she can "install" to her phone's home screen and also open in any desktop browser. One codebase covers both devices (R11). There's no app-store review, and it runs offline.
 
@@ -116,22 +151,31 @@ A 5-step scale from poor to great. The palette is chosen to work for colorblind 
 
 ---
 
-## 5. Build plan
+## 6. Build plan
 
 Each phase ends with something she can actually use.
 
-1. **Foundation.** Scaffold the project, set up the local database, the Log catch form with GPS, and the Home feed. *She can start logging on her phone (data stays on that device).*
+1. **Foundation.** Scaffold the project, set up the local database, the Log catch form with GPS, the Home feed and a JSON backup export. *She can start logging on her phone (data stays on that device).*
 2. **Map + Spots.** The color-coded map, nearest-spot matching, the Spots list and Spot detail with history. *Patterns become visible.*
-3. **Look-back + Search.** Day view, search and filters, charts, and season stats.
-4. **Sync + install.** Supabase accounts, phone↔desktop sync and the PWA install prompt.
-5. **Backfill + polish.** CSV import (to type up the old notebook in a spreadsheet and import it), CSV export for backups, and accessibility and sunlight-contrast checks.
+3. **Sync + install.** A single Supabase account, phone↔desktop sync and the PWA install prompt.
+4. **Notebook import.** Six years of entries is the bulk of the data, so this gets its own phase:
+   - A spreadsheet template to transcribe the notebook into
+   - Coordinates accepted as decimal degrees or degrees-minutes-seconds
+   - Entries within a set distance (default 50 m) proposed as the same spot, for her to confirm or split before import
+   - A dry-run preview showing errors before anything is saved
+5. **Look-back + Search.** Day view, search and filters, charts, season and year-over-year stats.
+6. **Spatial analysis.** Section 4.
+7. **Polish.** CSV export, accessibility and sunlight-contrast checks.
 
 ---
 
-## 6. Open questions
+## 7. Decisions
 
-1. **Rating each visit (recommended) or a single rating per spot?** See section 2.
-2. **Accounts and sync.** Is a free hosted backend (Supabase) acceptable? The alternative is a device-only app with manual export/import, which avoids any backend but makes phone↔desktop sharing clunky.
-3. **Catch detail.** Is a single number enough, or does she want keepers and throwbacks recorded separately?
-4. **Sharing.** Is the app just for her, or might she ever share specific spots with others?
-5. **Backfill.** Roughly how many notebook entries are there? This decides how much CSV import matters.
+| Question | Decision |
+|---|---|
+| Rating per visit or per spot? | Per visit. A spot's score is computed from recent visits. |
+| Hosted backend for sync? | Yes, Supabase. |
+| Catch detail | Keepers and throwbacks counted separately. Pots per visit recorded optionally, so the analysis can use catch per pot. |
+| Sharing | None. A single user, with all data private to her account. |
+| Backfill | About six years of entries, so the CSV import is a full phase (phase 4). |
+| Extra feature | Spatial autocorrelation analysis to find the best spots (section 4). |
