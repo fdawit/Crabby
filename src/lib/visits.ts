@@ -110,3 +110,32 @@ export function seasonSummary(visits: readonly Visit[], year: number): SeasonSum
 export function spotsById(spots: readonly Spot[]): Map<string, Spot> {
   return new Map(spots.map((s) => [s.id, s]))
 }
+
+export async function updateSpot(
+  id: string,
+  fields: Partial<Pick<Spot, 'name' | 'lat' | 'lng' | 'notes'>>,
+): Promise<void> {
+  await db.spots.update(id, { ...fields, ...(fields.name != null && { name: fields.name.trim() }) })
+}
+
+/**
+ * Moves every visit from `fromId` onto `intoId`, appends the old spot's notes, and deletes
+ * the old spot. Returns how many visits moved.
+ */
+export async function mergeSpots(fromId: string, intoId: string): Promise<number> {
+  if (fromId === intoId) throw new Error('Can’t merge a spot into itself.')
+  return db.transaction('rw', db.spots, db.visits, async () => {
+    const [from, into] = await Promise.all([db.spots.get(fromId), db.spots.get(intoId)])
+    if (!from || !into) throw new Error('Spot not found.')
+    const moved = await db.visits.where('spotId').equals(fromId).modify({ spotId: intoId })
+    const fromNotes = from.notes.trim()
+    if (fromNotes) {
+      const notes = into.notes.trim()
+      await db.spots.update(intoId, {
+        notes: notes ? `${notes}\n\nFrom ${from.name}: ${fromNotes}` : fromNotes,
+      })
+    }
+    await db.spots.delete(fromId)
+    return moved
+  })
+}

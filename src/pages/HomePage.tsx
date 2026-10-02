@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Page } from '../components/Layout'
 import { QualityBadge } from '../components/QualityBadge'
 import { db, type Visit } from '../db'
 import { formatDayHeading, formatTime } from '../lib/dates'
@@ -21,7 +22,7 @@ export function HomePage() {
   if (!visits || !spots) return null
 
   return (
-    <>
+    <Page>
       <UndoDeleteToast />
       <section aria-label="This season" className="mb-6 grid grid-cols-3 gap-2">
         <Stat label={`Kept in ${season.year}`} value={season.keepers} />
@@ -32,7 +33,7 @@ export function HomePage() {
       {days.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line p-8 text-center">
           <p className="text-lg font-semibold">No catches logged yet</p>
-          <p className="mt-1 text-muted">Tap “Log catch” next time you pull your pots.</p>
+          <p className="mt-1 text-muted">Tap “Log” next time you pull your pots.</p>
         </div>
       ) : (
         <ol className="space-y-6">
@@ -62,16 +63,7 @@ export function HomePage() {
           Show older days
         </button>
       )}
-
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <Link
-          to="/log"
-          className="pointer-events-auto w-full max-w-2xl rounded-2xl bg-accent py-4 text-center text-lg font-bold text-accent-ink shadow-lg active:bg-accent-strong"
-        >
-          + Log catch
-        </Link>
-      </div>
-    </>
+    </Page>
   )
 }
 
@@ -123,7 +115,7 @@ function UndoDeleteToast() {
   return (
     <div
       role="status"
-      className="fixed inset-x-4 bottom-24 z-20 mx-auto flex max-w-2xl items-center justify-between rounded-xl bg-ink px-4 py-3 text-bg shadow-lg"
+      className="fixed inset-x-4 bottom-24 z-[1000] md:bottom-6 mx-auto flex max-w-2xl items-center justify-between rounded-xl bg-ink px-4 py-3 text-bg shadow-lg"
     >
       <span>Visit deleted</span>
       <button

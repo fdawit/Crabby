@@ -13,6 +13,12 @@ Phase 1 (foundation) is done:
 - Data is stored on the device (IndexedDB) and works offline
 - JSON backup download and restore
 
+Phase 2 (map and spots) is done:
+- Map of every spot on NOAA nautical charts (or the street map), pins colored by score, filterable by season and month
+- Spots list sortable by score, keepers per visit, last visit or distance
+- Spot pages with this-season and all-time stats, catch and rating charts, and visit history
+- Rename a spot, add standing notes, move its pin, or merge a duplicate spot into it
+
 ## Development
 
 ```sh

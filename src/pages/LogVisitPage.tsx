@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Page } from '../components/Layout'
 import { RatingPicker } from '../components/RatingPicker'
 import { Stepper } from '../components/Stepper'
 import { db, type Rating, type Spot, type Visit } from '../db'
@@ -26,6 +27,7 @@ type GpsState =
 
 export function LogVisitPage() {
   const { visitId } = useParams()
+  const [params] = useSearchParams()
   const spots = useLiveQuery(() => db.spots.filter((s) => !s.archived).toArray())
   const existing = useLiveQuery(
     async () => (visitId ? ((await db.visits.get(visitId)) ?? null) : null),
@@ -35,18 +37,39 @@ export function LogVisitPage() {
   if (!spots || existing === undefined) return null
   if (visitId && existing === null) {
     return (
-      <p>
+      <Page>
         That visit no longer exists. <Link to="/" className="font-semibold underline">Go home</Link>
-      </p>
+      </Page>
     )
   }
-  // Keyed so switching between visits starts from fresh form state.
-  return <VisitForm key={existing?.id ?? 'new'} spots={spots} existing={existing} />
+  const presetSpot = params.get('spot')
+  return (
+    <Page>
+      {/* Keyed so switching between visits starts from fresh form state. */}
+      <VisitForm
+        key={existing?.id ?? 'new'}
+        spots={spots}
+        existing={existing}
+        presetSpotId={spots.some((s) => s.id === presetSpot) ? presetSpot : null}
+      />
+    </Page>
+  )
 }
 
-function VisitForm({ spots, existing }: { spots: Spot[]; existing: Visit | null }) {
+function VisitForm({
+  spots,
+  existing,
+  presetSpotId,
+}: {
+  spots: Spot[]
+  existing: Visit | null
+  presetSpotId: string | null
+}) {
   const navigate = useNavigate()
-  const [spotChoice, setSpotChoice] = useState(existing?.spotId ?? '')
+  const location = useLocation()
+  // Return to wherever the form was opened from (Home, a spot page…); Home if opened directly.
+  const goBack = () => (location.key === 'default' ? navigate('/') : navigate(-1))
+  const [spotChoice, setSpotChoice] = useState(existing?.spotId ?? presetSpotId ?? '')
   const [newName, setNewName] = useState('')
   const [lat, setLat] = useState('')
   const [lng, setLng] = useState('')
@@ -150,7 +173,7 @@ function VisitForm({ spots, existing }: { spots: Spot[]; existing: Visit | null 
         },
         existing?.id,
       )
-      navigate('/')
+      goBack()
     } catch (err) {
       setError(`Couldn’t save: ${err instanceof Error ? err.message : String(err)}`)
       setSaving(false)
@@ -325,9 +348,13 @@ function VisitForm({ spots, existing }: { spots: Spot[]; existing: Visit | null 
         >
           {saving ? 'Saving…' : existing ? 'Save changes' : 'Save catch'}
         </button>
-        <Link to="/" className="block py-2 text-center font-semibold text-muted">
+        <button
+          type="button"
+          onClick={goBack}
+          className="block w-full py-2 text-center font-semibold text-muted"
+        >
           Cancel
-        </Link>
+        </button>
         {existing && (
           <button
             type="button"

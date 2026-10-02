@@ -17,6 +17,11 @@
   --q3: #9e9e9e;
   --q4: #67a9cf;
   --q5: #2166ac;
+  --q-none: #d4d0c8;
+
+  /* Chart series (validated categorical pair: CVD ΔE 24.7 light / 31.8 normal-vision dark) */
+  --series-keepers: #2a78d6;
+  --series-throwbacks: #eb6834;
   color-scheme: light dark;
 }
 
@@ -31,6 +36,9 @@
     --accent-strong: #fb923c;
     --accent-ink: #1a0d04;
     --danger: #f87171;
+    --q-none: #3b4853;
+    --series-keepers: #3987e5;
+    --series-throwbacks: #d95926;
   }
 }
 
@@ -57,4 +65,43 @@ input,
 select,
 textarea {
   font-size: 1rem; /* ≥16px stops iOS zooming into fields */
+}
+
+/* Map pins */
+.crabby-pin span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.45);
+  font: 700 13px/1 system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.crabby-pin span.selected {
+  border: 3px solid var(--ink);
+  font-size: 15px;
+}
+.crabby-here span {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #1a73e8;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 6px rgb(26 115 232 / 0.25);
+}
+.leaflet-container {
+  font: inherit;
+  background: var(--bg);
+}
+.leaflet-container .leaflet-control-attribution {
+  font-size: 10px;
+  line-height: 1.4;
+}
+/* Phones pinch to zoom; the +/- buttons only clutter the small screen. */
+@media (pointer: coarse) {
+  .leaflet-control-zoom {
+    display: none;
+  }
 }

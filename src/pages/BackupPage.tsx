@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type ChangeEvent } from 'react'
+import { Page } from '../components/Layout'
 import { db } from '../db'
 import { createBackup, parseBackup, restoreBackup } from '../lib/backup'
 import { localDayKey } from '../lib/dates'
@@ -38,7 +39,8 @@ export function BackupPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <Page>
+      <div className="space-y-6">
       <h1 className="text-2xl font-extrabold">Backup</h1>
       <p className="text-muted">
         Your log is saved on this device. Until syncing is added, download a backup now and then
@@ -79,6 +81,7 @@ export function BackupPage() {
           {message.text}
         </p>
       )}
-    </div>
+      </div>
+    </Page>
   )
 }

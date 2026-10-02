@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { db, type Visit } from '../db'
-import { groupByDay, saveVisit, seasonSummary } from './visits'
+import { addSpot, makeVisit } from '../test/fixtures'
+import { groupByDay, mergeSpots, saveVisit, seasonSummary } from './visits'
 
 const base = { keepers: 0, throwbacks: 0, pots: null, rating: 3 as const, notes: '' }
 
@@ -76,5 +77,27 @@ describe('seasonSummary', () => {
       2026,
     )
     expect(s).toEqual({ year: 2026, keepers: 7, throwbacks: 1, visits: 2, days: 1 })
+  })
+})
+
+describe('mergeSpots', () => {
+  it('moves visits, combines notes and removes the duplicate', async () => {
+    await addSpot('keep', 'Pier 4')
+    await addSpot('dupe', 'Pier four')
+    await db.spots.update('dupe', { notes: 'Ladder side' })
+    await db.visits.bulkAdd([
+      makeVisit('dupe', new Date(2026, 6, 1), 3, 3),
+      makeVisit('dupe', new Date(2026, 6, 2), 5, 4),
+      makeVisit('keep', new Date(2026, 6, 3), 1, 2),
+    ])
+
+    expect(await mergeSpots('dupe', 'keep')).toBe(2)
+    expect(await db.spots.get('dupe')).toBeUndefined()
+    expect(await db.visits.where('spotId').equals('keep').count()).toBe(3)
+    expect((await db.spots.get('keep'))?.notes).toBe('Ladder side')
+  })
+
+  it('refuses to merge a spot into itself', async () => {
+    await expect(mergeSpots('x', 'x')).rejects.toThrow(/itself/)
   })
 })

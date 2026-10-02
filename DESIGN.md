@@ -2,7 +2,7 @@
 
 Crabby replaces a spiral crabbing notebook. It logs every visit to a spot (when, where, how many crabs, how good it was, and notes), shows those spots on a color-coded map, and makes the history easy to search and compare.
 
-Status: **approved, Phase 1 in progress.** Decisions are recorded in section 6.
+Status: **Phases 1–2 built.** Decisions are recorded in section 6.
 
 ---
 
@@ -46,7 +46,7 @@ archived      bool                    pots          integer ≥ 1, optional
                                       createdAt / updatedAt
 ```
 
-**Why rate each visit and not each spot?** A spot can be great in July and dead in October. If she rates every visit, the app can work out a spot's quality *over time*, and those over-time patterns are what she's trying to find. The spot's map color comes from a **recent average rating** (default: the last 5 visits). It's computed, so she never has to update it by hand.
+**Why rate each visit and not each spot?** A spot can be great in July and dead in October. If she rates every visit, the app can work out a spot's quality *over time*, and those over-time patterns are what she's trying to find. A spot's **score is the average rating of its visits in the current season**, so she never has to update it by hand. A season is a calendar year: in the San Juan Islands (WDFW Marine Area 7) the summer and winter seasons both fall within one year. The Map and Spots screens can switch to any past season, all seasons, or one month (e.g. "every September").
 
 ### Planned extensions (fields we can add later without breaking anything)
 - Tide stage, weather and water temperature (could be filled in automatically from public APIs using time and location)
@@ -138,16 +138,19 @@ It runs entirely in the browser in a small TypeScript module (`src/analysis/`). 
 |---|---|---|
 | UI | React + TypeScript, built with Vite | Widely used and well supported |
 | Styling | Tailwind CSS | Makes mobile-first responsive layouts quick to build |
-| Map | Leaflet + OpenStreetMap tiles | Free, with no API key |
+| Map | Leaflet, with NOAA nautical charts by default (over an OpenStreetMap base) and an OpenStreetMap street view | Free, with no API key. NOAA charts show depth and channels around the San Juans. |
 | On-device storage | IndexedDB (via Dexie) | Lets logging and browsing work fully offline on the boat |
 | Sync + accounts | Supabase (hosted Postgres + auth) | Keeps phone and desktop in sync. Its free tier is more than enough. Row-level security keeps her spots private. |
-| Charts | Recharts | Draws the spot-over-time charts |
+| Charts | Recharts | Draws the spot-over-time charts (catch and rating as two charts sharing an x-axis, never one dual-axis chart) |
 | Offline / install | vite-plugin-pwa (service worker) | Makes the app installable and cached for offline use |
 | Hosting | Static host (Netlify, Vercel or Cloudflare Pages) | Free, with HTTPS (which phone GPS requires) |
 
 **Sync model:** every write goes to the local database first, so the app always responds instantly. A background sync pushes changes to Supabase when a connection is available. Conflicts are resolved with "last edit wins", which is fine for a single user across two devices.
 
-**Known limitation:** map *tiles* only display offline for areas she has already viewed while online. Pins, logs and logging always work offline.
+**Known limitations:**
+- Map *tiles* only display offline for areas she has already viewed while online. Pins, logs and logging always work offline.
+- NOAA's chart server draws each tile on request, so it's slower than the street map. If NOAA's tiles fail, the map says so and offers the street map.
+- Zoomed out, pins shrink to small colored dots so nearby spots don't overlap. The score number appears once she zooms in.
 
 ---
 
@@ -179,3 +182,5 @@ Each phase ends with something she can actually use.
 | Sharing | None. A single user, with all data private to her account. |
 | Backfill | About six years of entries, so the CSV import is a full phase (phase 4). |
 | Extra feature | Spatial autocorrelation analysis to find the best spots (section 4). |
+| Map background | NOAA nautical charts by default, OpenStreetMap as an option. The map opens on the San Juan Islands until spots exist, then fits to her spots. |
+| Spot score window | Current season only (a season is a calendar year). |
