@@ -175,7 +175,7 @@ function SpotOverview({ spot, visits, onEdit }: { spot: Spot; visits: Visit[]; o
                     <div className="font-semibold">{formatDayHeading(localDayKey(v.startedAt))}</div>
                     <div className="truncate text-sm text-muted">
                       {formatTime(v.startedAt)}
-                      {v.pots != null && ` · ${v.pots} pots`}
+                      {v.pots != null && ` · ${v.pots} pot${v.pots === 1 ? '' : 's'}`}
                       {v.notes && ` · ${v.notes}`}
                     </div>
                   </div>

@@ -19,6 +19,10 @@ Phase 2 (map and spots) is done:
 - Spot pages with this-season and all-time stats, catch and rating charts, and visit history
 - Rename a spot, add standing notes, move its pin, or merge a duplicate spot into it
 
+## Sample data
+
+`sample-data/crabby-sample-backup.json` holds six fictional seasons of San Juan Islands crabbing to test with. Load it through **Backup → Restore**. [sample-data/README.md](./sample-data/README.md) describes it.
+
 ## Development
 
 ```sh

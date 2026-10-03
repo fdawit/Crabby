@@ -85,7 +85,7 @@ function VisitRow({ visit, spotName }: { visit: Visit; spotName?: string }) {
           <div className="truncate font-semibold">{spotName ?? 'Unknown spot'}</div>
           <div className="truncate text-sm text-muted">
             {formatTime(visit.startedAt)}
-            {visit.pots != null && ` · ${visit.pots} pots`}
+            {visit.pots != null && ` · ${visit.pots} pot${visit.pots === 1 ? '' : 's'}`}
             {visit.notes && ` · ${visit.notes}`}
           </div>
         </div>
